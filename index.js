@@ -1,58 +1,44 @@
 const express = require('express')
 const cors = require('cors')
 
+require('dotenv').config()
+require('./mongo.js')
+
 const app = express()
+const Note = require('./models/Note.js')
+const notFound = require('./middlewares/notFound.js')
+const handleError = require('./middlewares/handleError.js')
 const logger = require('./middlewares/loggerMiddleware')
+const startServerMiddleware = require('./server.js')
 
 app.use(express.json())
 app.use(logger)
 app.use(cors())
-
-let notes = [
-  {
-    id: 1,
-    content: 'Hi, this is a test note :p',
-    date: '2019-05-30T17:30:31.098Z',
-    important: true
-  },
-  {
-    id: 2,
-    content: 'Hi, this is a test note :D!',
-    date: '2019-05-30T17:30:31.098Z',
-    important: false
-  },
-  {
-    id: 3,
-    content: 'Hi, this is a test note :I',
-    date: '2019-05-30T17:30:31.098Z',
-    important: true
-  }
-]
-
-/* const app = http.createServer((request, response) => {
-  response.writeHead(200,
-    { 'Content-Type': 'application/json' } //Header/ContentType
-    )
-  response.end(JSON.stringify(notes))
-}) */
 
 app.get('/', (request, response) => {
   response.send('<h1>Hello World!</h1>')
 })
 
 app.get('/api/notes', (resquest, response) => {
-  response.json(notes)
+  Note.find({}).then((notes) => {
+    response.json(notes)
+  }).catch((err) => {
+    console.error(err)
+  })
 })
 
-app.get('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const note = notes.find(note => note.id === id)
+app.get('/api/notes/:id', (request, response, next) => {
+  const { id } = request.params
 
-  if (note) {
-    response.json(note)
-  } else {
-    response.status(404).end()
-  }
+  Note.findById(id).then(note => {
+    if (note) {
+      response.json(note)
+    } else {
+      response.status(404).end()
+    }
+  }).catch(err => {
+    next(err)
+  })
 })
 
 app.post('/api/notes', (request, response) => {
@@ -64,24 +50,39 @@ app.post('/api/notes', (request, response) => {
     })
   }
 
-  const ids = notes.map(note => note.id)
-  const maxId = Math.max(...ids)
-
-  const newNote = {
-    id: maxId + 1,
+  const newNote = Note({
     content: note.content,
     date: new Date().toISOString(),
-    important: typeof note.important !== undefined ? note.important : false
-  }
+    important: note.important || false
+  })
 
-  notes = [...notes, newNote]
-
-  response.status(201).json(newNote)
+  newNote.save({}).then(savedNote => {
+    response.json(savedNote)
+  })
 })
 
-app.delete('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  notes = notes.filter(note => note.id !== id)
+app.put('/api/notes/:id', (request, response, next) => {
+  const { id } = request.params
+  const note = request.body
+
+  const newNoteInfo = {
+    content: note.content,
+    important: note.important
+  }
+
+  Note.findByIdAndUpdate(id, newNoteInfo, { new: true })
+    .then(result => {
+      response.json(result)
+    })
+})
+
+app.delete('/api/notes/:id', (request, response, next) => {
+  const { id } = request.params
+
+  Note.findByIdAndDelete(id).then(() => {
+    response.status(204).end()
+  }).catch(error => next(error))
+
   response.status(204).end()
 })
 
@@ -91,7 +92,13 @@ app.use((request, response) => {
   })
 })
 
-const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+app.use((request, response) => {
+  response.status(404).json({
+    error: 'Not found'
+  })
 })
+
+app.use(notFound) // Middleware notFound.js
+app.use(handleError) // Middleware handleError.js
+
+startServerMiddleware(app) // Middleware to up the server
