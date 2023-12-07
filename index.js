@@ -9,7 +9,7 @@ const Note = require('./models/Note.js')
 const notFound = require('./middlewares/notFound.js')
 const handleError = require('./middlewares/handleError.js')
 const logger = require('./middlewares/loggerMiddleware')
-const startServerMiddleware = require('./server.js')
+// const startServerMiddleware = require('./server.js')
 
 app.use(express.json())
 app.use(logger)
@@ -19,12 +19,9 @@ app.get('/', (request, response) => {
   response.send('<h1>Hello World!</h1>')
 })
 
-app.get('/api/notes', (resquest, response) => {
-  Note.find({}).then((notes) => {
-    response.json(notes)
-  }).catch((err) => {
-    console.error(err)
-  })
+app.get('/api/notes', async (resquest, response) => {
+  const notes = await Note.find({})
+  response.json(notes)
 })
 
 app.get('/api/notes/:id', (request, response, next) => {
@@ -41,7 +38,7 @@ app.get('/api/notes/:id', (request, response, next) => {
   })
 })
 
-app.post('/api/notes', (request, response) => {
+app.post('/api/notes', async (request, response) => {
   const note = request.body
 
   if (!note || !note.content) {
@@ -56,9 +53,12 @@ app.post('/api/notes', (request, response) => {
     important: note.important || false
   })
 
-  newNote.save({}).then(savedNote => {
+  try {
+    const savedNote = await newNote.save({})
     response.json(savedNote)
-  })
+  } catch (error) {
+    console.error(error)
+  }
 })
 
 app.put('/api/notes/:id', (request, response, next) => {
@@ -76,20 +76,10 @@ app.put('/api/notes/:id', (request, response, next) => {
     })
 })
 
-app.delete('/api/notes/:id', (request, response, next) => {
+app.delete('/api/notes/:id', async (request, response, next) => {
   const { id } = request.params
-
-  Note.findByIdAndDelete(id).then(() => {
-    response.status(204).end()
-  }).catch(error => next(error))
-
+  await Note.findByIdAndDelete(id)
   response.status(204).end()
-})
-
-app.use((request, response) => {
-  response.status(404).json({
-    error: 'Not found'
-  })
 })
 
 app.use((request, response) => {
@@ -101,4 +91,9 @@ app.use((request, response) => {
 app.use(notFound) // Middleware notFound.js
 app.use(handleError) // Middleware handleError.js
 
-startServerMiddleware(app) // Middleware to up the server
+const PORT = process.env.PORT
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+
+module.exports = { app, server }
