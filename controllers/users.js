@@ -4,7 +4,11 @@ const User = require('../models/User')
 
 usersRouter.get('/', async (request, response, next) => {
   try {
-    const users = await User.find({})
+    const users = await User.find({}).populate('notes', { // finding all users in the DB and creating a "join" with "POPULATE" function
+      content: 1,
+      date: 1,
+      _id: 0
+    })
     response.json(users)
   } catch (error) {
     next(error)
@@ -43,11 +47,11 @@ usersRouter.post('/', async (request, response, next) => {
     const savedUser = await newUser.save()
     response.status(201).json(savedUser)
   } catch (error) {
-    next(error)
+    response.status(400).json(error)
   }
 })
 
-usersRouter.put('/:id', async (response, request, next) => {
+usersRouter.put('/:id', async (request, response, next) => {
   const { id } = request.params
   const user = request.body
 

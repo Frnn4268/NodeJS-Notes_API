@@ -90,7 +90,7 @@ describe('DELETE notes', () => {
   test('A note can´t be deleted', async () => {
     await api
       .delete('/api/notes/1234')
-      .expect(204)
+      .expect(400)
 
     const { response } = await getAllContentFromNotes()
 
