@@ -1,11 +1,12 @@
 const mongoose = require('mongoose')
 const { server } = require('../index')
-
 const bcrypt = require('bcrypt')
 const User = require('../models/User')
 const { api, getUsers } = require('../helpers/helpers')
 
+// Test suite for creating a new user
 describe('Creating a new user', () => {
+  // Set up a user with a hashed password before each test
   beforeEach(async () => {
     await User.deleteMany({})
 
@@ -19,6 +20,7 @@ describe('Creating a new user', () => {
     await user.save()
   })
 
+  // Test case: Creating a user with a duplicate username should fail
   test('Works as expected creating a fresh username (POST)', async () => {
     const usersAtStart = await getUsers()
 
@@ -42,7 +44,8 @@ describe('Creating a new user', () => {
     expect(userNames).toContain(newUser.username)
   })
 
-  test('Creating fails with proper statuscode and message if username is already token', async () => {
+  // Test case: Creating a user with an existing username should fail
+  test('Creating fails with proper status code and message if username is already taken', async () => {
     const usersAtStart = await getUsers()
 
     const newUser = {
@@ -52,7 +55,7 @@ describe('Creating a new user', () => {
     }
 
     const result = await api
-      .post('api/users')
+      .post('/api/users')
       .send(newUser)
       .expect(400)
       .expect('Content-Type', /application\/json/)
@@ -63,6 +66,7 @@ describe('Creating a new user', () => {
     expect(usersAtEnd).toHaveLength(usersAtStart.length)
   })
 
+  // Clean up after all tests by closing the server and mongoose connection
   afterAll(() => {
     server.close()
     mongoose.connection.close()

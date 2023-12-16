@@ -15,6 +15,7 @@ const logger = require('./middlewares/loggerMiddleware')
 const usersRouter = require('./controllers/users.js')
 const notesRouter = require('./controllers/notes.js')
 const homeRouter = require('./controllers/home.js')
+const loginRouter = require('./controllers/login.js')
 
 app.use(express.json())
 app.use(logger)
@@ -23,13 +24,8 @@ app.use(cors())
 // app.use to use the Routers
 app.use('/api/users', usersRouter)
 app.use('/api/notes', notesRouter)
+app.use('/api/login', loginRouter)
 app.use('/', homeRouter)
-
-app.use((request, response) => {
-  response.status(404).json({
-    error: 'Not found'
-  })
-})
 
 app.use(notFound) // Middleware notFound.js
 app.use(handleError) // Middleware handleError.js

@@ -4,17 +4,19 @@ const { server } = require('../index')
 const Note = require('../models/Note')
 const { api, initialNotes, getAllContentFromNotes } = require('../helpers/helpers.js')
 
+// Clear the database and insert initial notes before each test
 beforeEach(async () => {
   await Note.deleteMany({})
 
-  for (const note of initialNotes) { // Sequential
+  for (const note of initialNotes) {
     const noteObject = new Note(note)
     await noteObject.save()
   }
 })
 
+// Test suite for GET requests to retrieve all notes
 describe('GET all notes', () => {
-  test('Notes are return as json', async () => {
+  test('Notes are returned as JSON', async () => {
     await api
       .get('/api/notes')
       .expect(200)
@@ -34,6 +36,7 @@ describe('GET all notes', () => {
   })
 })
 
+// Test suite for POST requests to add new notes
 describe('POST notes', () => {
   test('A valid note can be added (POST)', async () => {
     const newNote = {
@@ -55,9 +58,8 @@ describe('POST notes', () => {
     expect(contents).toContain(newNote.content)
   })
 
-  test('A invalid note can´t be added (POST)', async () => {
-    const newNote = {
-    }
+  test('An invalid note can\'t be added (POST)', async () => {
+    const newNote = {}
 
     await api
       .post('/api/notes')
@@ -70,6 +72,7 @@ describe('POST notes', () => {
   })
 })
 
+// Test suite for DELETE requests to remove notes
 describe('DELETE notes', () => {
   test('A note can be deleted', async () => {
     const { response: firstResponse } = await getAllContentFromNotes()
@@ -87,7 +90,7 @@ describe('DELETE notes', () => {
     expect(contents).not.toContain(noteToDelete.content)
   })
 
-  test('A note can´t be deleted', async () => {
+  test('A note can\'t be deleted', async () => {
     await api
       .delete('/api/notes/1234')
       .expect(400)
@@ -98,6 +101,7 @@ describe('DELETE notes', () => {
   })
 })
 
+// Cleanup after all tests by closing the server and mongoose connection
 afterAll(() => {
   server.close()
   mongoose.connection.close()

@@ -1,3 +1,4 @@
-module.exports = (request, response, next) => { // 404 Middleware
+module.exports = (request, response, next) => {
+  // Middleware for handling 404 errors
   response.status(404).end()
 }
