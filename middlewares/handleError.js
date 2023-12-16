@@ -1,15 +1,23 @@
-module.exports = (error, request, response, next) => {
-  // Middleware for handling errors
+const ERROR_HANDLERS = { // Types of error in our Backend
+  CastError: res => res.status(400).send({
+    error: 'Invalid ID format'
+  }),
 
-  console.error(error)
+  ValidationError: (res, message) => res.status(400).send({
+    error: message.message
+  }),
 
-  if (error.name === 'CastError') {
-    // Handling CastError (e.g., invalid ID format)
-    response.status(400).send({
-      error: 'Invalid ID format'
-    })
-  } else {
-    // Handling other errors with a generic 500 status code
-    response.status(500).end()
-  }
+  JsonWebTokenError: (res) => res.status(401).json({
+    error: 'Token is missing or invalid'
+  }),
+
+  defaultError: res => res.status(500).send()
+}
+
+module.exports = (error, request, res, next) => {
+  console.error(error.name)
+  const handler =
+    ERROR_HANDLERS[error.name] || ERROR_HANDLERS.error
+
+  handler(res, error)
 }

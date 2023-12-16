@@ -1,6 +1,7 @@
 const notesRouter = require('express').Router()
 const Note = require('../models/Note')
 const User = require('../models/User')
+const userExtractor = require('../middlewares/userExtractor')
 
 // Handle GET requests to retrieve all notes with user details
 notesRouter.get('/', async (request, response, next) => {
@@ -36,8 +37,14 @@ notesRouter.get('/:id', async (request, response, next) => {
 })
 
 // Handle POST requests to create a new note
-notesRouter.post('/', async (request, response, next) => {
-  const { content, important = false, userId } = request.body
+notesRouter.post('/', userExtractor, async (request, response, next) => {
+  // Destructuring request body to extract content and importance
+  const {
+    content,
+    important = false
+  } = request.body
+
+  const { userId } = request
 
   // Find the user associated with the provided userId
   const user = await User.findById(userId)
@@ -72,7 +79,7 @@ notesRouter.post('/', async (request, response, next) => {
 })
 
 // Handle PUT requests to update a note by ID
-notesRouter.put('/:id', async (request, response, next) => {
+notesRouter.put('/:id', userExtractor, async (request, response, next) => {
   const { id } = request.params
   const note = request.body
 
@@ -92,7 +99,7 @@ notesRouter.put('/:id', async (request, response, next) => {
 })
 
 // Handle DELETE requests to delete a note by ID
-notesRouter.delete('/:id', async (request, response, next) => {
+notesRouter.delete('/:id', userExtractor, async (request, response, next) => {
   const { id } = request.params
 
   try {
